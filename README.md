@@ -7,3 +7,7 @@ this repo was made to test the behavior of the different events and also observa
 
 This version of the repo is still very rough and initial, later I will refactor it and document the code better 
 
+
+To see the results of the tests I recommend:
+- Using VsCode with live server extension
+- Enabling the dev tools in chrome browser (Google Chrome browser is the configured navigator for live server ) 
