@@ -1,0 +1,186 @@
+< !DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>ArcGIS API for JavaScript Hello World App</title>
+        <style>
+            html,
+            body,
+            #viewDiv {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+        </style>
+
+        <link rel="stylesheet" href="https://js.arcgis.com/4.13/esri/css/main.css">
+        <script src="https://js.arcgis.com/4.13/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/WebMap",
+                "esri/config",
+                "esri/portal/Portal",
+                "esri/portal/PortalItem",
+                "esri/core/watchUtils"
+            ], function (Map, MapView, WebMap, esriConfig, Portal, PortalItem, watchUtils) {
+                // Set the default portalUrl value to the hostname of the on-premise portal
+                //esriConfig.portalUrl = "https://appsdev.pancanal.com/miraportal"
+                esriConfig.portalUrl = "https://geoportal.esri.co/portal"
+
+                var webmap = new WebMap({
+                    portalItem: {
+                        //id: "86d29b99f35744948b43ce5cc508e841"
+                        id: "be8b05cebe58462db946e36402f34205"
+                    }
+                });
+                // create a Map loaded from a webmap
+                var mapView = new MapView({
+                    container: "viewDiv",
+                    map: webmap //when done this way it calls the load method directly
+                });
+
+
+                webmap.when(function () {
+                    // the webmap successfully loaded                   
+
+                    watchUtils.whenTrue(webmap, "loaded", () => {
+                        //console.log(new Date().toLocaleString(), "webMap object fully loaded");
+                    });
+
+                    webmap.allLayers.on("change", function (event) {
+
+                        if (event.added.length > 0) {
+                            console.log(new Date().toLocaleString(), "Layer added: ", event.added);
+                            event.added.forEach(function (value, i, array) {
+                                console.log(i, new Date().toLocaleString(), typeof (value), value);
+                                console.log(i, new Date().toLocaleString(), typeof (value.loaded), value.loaded);
+                                watchUtils.whenTrue(value, "loaded", () => {
+                                    console.log(new Date().toLocaleString(), "layer fully loaded: type->" + value.type);
+                                });
+                            });
+                        }
+                        if (event.removed.length > 0) {
+                            /*console.log(new Date().toLocaleString(), "Layer removed: ", event.removed);*/
+                        }
+                        if (event.moved.length > 0) {
+                            /*console.log(new Date().toLocaleString(), "Layer moved: ", event.moved);*/
+                        }
+                        //console.log("estado original de la capa:", event.moved[1].loaded);
+                        //console.log("contenido de webmap.layers", webmap.layers[1]);
+                        // watchUtils.once(event.moved[1], "loaded", function (event) {
+                        //     console.log("termino, de cargar la capa", event);
+                        //     console.log("contenido de webmap.layers", webmap.layers[1]);
+                        // })
+                    });
+                }).catch(function (error) {
+                    // the webmap or portal failed to load
+                    console.log("The resource failed to load: ", error);
+                });
+
+
+                mapView.when(function () {
+                    // All the resources in the MapView and the map have loaded. Now execute additional processes
+                    console.log(new Date().toLocaleString(), "se terminó de crear la vista de mapa");
+                    console.log("MAPVIEW IS READY?", mapView.ready);
+
+                    mapView.on("layerview-create", function (event) {
+                        console.log("---------------------------------------------");
+                        console.log("Se creo un nuevo layerView", event.layerView);
+                        console.log("layerView is visible:", event.layerView.visible);
+                        console.log("layer is loaded:", event.layer.loaded);
+                        //console.log(event.layerView.updating, "actualizacion completa");
+                        console.log("layerView>layer type: ", event.layerView.layer.type);
+                        console.log("layerView>layer id: ", event.layerView.layer.id);
+                        if (event.layerView.layer.type == "feature") {
+                            //console.log("featurelayer maximumNumberOffFeatures:", event.layer.maximumNumberOfFeatures);
+                            /*event.layerView.queryFeatures({
+                                geometry: mapView.extent,
+                                returnGeometry: true
+                            }).then(function (results) {
+                                // do something with the resulting graphics
+                                console.log("probably when updating", results.features);
+                            });
+                            */
+
+                            watchUtils.whenFalse(event.layerView, "updating", function () {
+                                /////
+                                
+                                event.layerView.queryFeatures({
+                                    geometry: mapView.extent,
+                                    returnGeometry: true
+                                }).then(function (results) {
+                                    // do something with the resulting graphics
+                                    console.log("query ", event.layerView.layer.id, " when NOT updating", results.features);
+                                    console.log(event.layerView.layer.id, " when NOT updating -> featurelayer maximumNumberOffFeatures:", event.layerView.maximumNumberOfFeatures);
+                                });
+                            });
+
+                            /*
+                            watchUtils.whenTrue(event.layerView, "updating", function () {
+                                event.layerView.queryFeatures({
+                                    geometry: mapView.extent,
+                                    returnGeometry: true
+                                }).then(function (results) {
+                                    // do something with the resulting graphics
+                                    console.log("query ", event.layerView.layer.id, "when updating", results.features);
+                                    console.log(event.layerView.layer.id, " when updating -> featurelayer maximumNumberOffFeatures:", event.layerView.maximumNumberOfFeatures);
+                                });
+                            });
+                            */
+                        }
+
+
+                        /*
+                        watchUtils.whenFalse(event.layerView, "updating", function () {
+                            console.log(event.layerView.updating, "actualizacion completa");
+                            console.log("layerView>layer type: ",event.layerView.layer.type);
+                            console.log("layerView>layer id: ",event.layerView.layer.id);
+                            if (event.layerView.layer.type != "feature") return;
+                            
+                            console.log("featurelayer maximumNumberOffFeatures:", event.layer
+                            .maximumNumberOfFeatures);
+                            event.layerView
+                                .queryFeatures({
+                                    geometry: mapView.extent,
+                                    returnGeometry: true
+                                })
+                                .then(function (results) {
+                                    // do something with the resulting graphics
+                                    console.log( results.features);
+                                });
+                        });
+                        */
+                    });
+
+                    // now we go for the layerViews
+                    /*for (layerView in mapView.allLayerViews) {
+                        console.log("meow", mapView.allLayerViews);
+                        console.log("capa", layerView, typeof (layerView));
+                        watchUtils.whenTrue(layerView, "visible", () => {
+                            console.log(new Date().toLocaleString(),
+                                "layer is visible in the mapview");
+                        });
+                    }*/
+                }, function (error) {
+                    // Use the errback function to handle when the view doesn't load properly
+                    console.log(new Date().toLocaleString(), "The view's resources failed to load: ",
+                        error);
+                });
+
+            });
+        </script>
+
+    </head>
+
+    <body>
+        <div id="viewDiv"></div>
+    </body>
+
+    </html>
